@@ -1,14 +1,14 @@
 # ROADMAP.md — AI Task Scheduler: DataCollector
 
 > **Milestone**: v1.0 — DataCollector Standalone Executable & Telemetry Pipeline
-> **Current Phase**: Phase 3 (Rule-Based Classifier & Active Learning System)
+> **Current Phase**: Phase 4 (Desktop UI, Disclaimer & Retrospective Timeline)
 
 ---
 
 ## Must-Haves (from SPEC)
 - [x] Project Scaffolding & Foundational Data Contracts (Phase 1)
 - [x] Non-Admin Win32 Telemetry Engine (Keyboard/Mouse aggregates, Window title/geometry, Audio states, Idle) (Phase 2)
-- [ ] Rule-Based Auto-Classification & Smart Prompting / Retrospective Timeline (Phase 3)
+- [x] Rule-Based Auto-Classification & Smart Prompting / Retrospective Timeline (Phase 3)
 - [ ] Desktop UI & Privacy Disclaimer First-Run Screen (Phase 4)
 - [ ] Incremental Deduplicated Local Dataset Export & Standalone Packaging (Phase 5)
 
@@ -27,7 +27,7 @@
 **Requirements**: REQ-03, REQ-04, REQ-05, REQ-10
 
 ### Phase 3: Rule-Based Classifier & Active Learning System
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Objective**: Build the heuristic classification pipeline, state transition detector, smart popup trigger, and user feedback ingestion loop.  
 **Requirements**: REQ-06, REQ-07
 
