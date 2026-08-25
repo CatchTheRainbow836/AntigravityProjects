@@ -1,25 +1,24 @@
 # ROADMAP.md — AI Task Scheduler: DataCollector
 
 > **Milestone**: v1.0 — DataCollector Standalone Executable & Telemetry Pipeline
-> **Current Phase**: Phase 1 (Foundation & Architecture)
+> **Current Phase**: Phase 2 (Core Win32 Telemetry & Storage Engine)
 
 ---
 
 ## Must-Haves (from SPEC)
-- [ ] Standalone zero-dependency executable (`TaskScheduler/DataCollector/dist/DataCollector.exe`)
-- [ ] Privacy & Disclaimer First-Run Screen
-- [ ] Non-Admin Win32 Telemetry Engine (Keyboard/Mouse aggregates, Window title/geometry, Audio states, Idle)
-- [ ] Rule-Based Auto-Classification & Smart Prompting / Retrospective Timeline
-- [ ] Incremental Deduplicated Local Dataset Export (JSONL / CSV / Parquet)
-- [ ] Comprehensive Project Documentation & README
+- [x] Project Scaffolding & Foundational Data Contracts (Phase 1)
+- [ ] Non-Admin Win32 Telemetry Engine (Keyboard/Mouse aggregates, Window title/geometry, Audio states, Idle) (Phase 2)
+- [ ] Rule-Based Auto-Classification & Smart Prompting / Retrospective Timeline (Phase 3)
+- [ ] Desktop UI & Privacy Disclaimer First-Run Screen (Phase 4)
+- [ ] Incremental Deduplicated Local Dataset Export & Standalone Packaging (Phase 5)
 
 ---
 
 ## Phases
 
 ### Phase 1: Foundation & Project Setup
-**Status**: ⬜ Not Started  
-**Objective**: Establish `TaskScheduler/DataCollector/` directory structure, build toolchains (Rust / Win32 backend & modern UI), and master `README.md`.  
+**Status**: ✅ Complete  
+**Objective**: Establish `TaskScheduler/DataCollector/` directory structure, build toolchains (Rust / Win32 backend & modern UI), and master README.md.  
 **Requirements**: REQ-01, REQ-12
 
 ### Phase 2: Core Win32 Telemetry & Storage Engine
