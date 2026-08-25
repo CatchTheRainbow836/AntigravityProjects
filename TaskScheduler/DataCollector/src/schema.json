@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TelemetryRecord",
+  "description": "Structured time-slice telemetry feature record for AI behavior recognition and scheduling",
+  "type": "object",
+  "required": [
+    "timestamp",
+    "app_name",
+    "window_title_sanitized",
+    "screen_area_pct",
+    "keystrokes_per_min",
+    "mouse_velocity_avg",
+    "clicks_count",
+    "scroll_delta",
+    "is_audio_playing",
+    "system_idle_seconds",
+    "cognitive_state",
+    "domain_label",
+    "confidence",
+    "label_source"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique UUID or incremental record identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of the sample window"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "default": 5.0,
+      "description": "Duration of the aggregation time-slice in seconds"
+    },
+    "app_name": {
+      "type": "string",
+      "description": "Executable or process name of foreground application (e.g. WINWORD.EXE, Chrome.exe)"
+    },
+    "window_title_sanitized": {
+      "type": "string",
+      "description": "Scrubbed, non-sensitive window title containing document and subject cues"
+    },
+    "screen_area_pct": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 100.0,
+      "description": "Percentage of primary screen area occupied by foreground window"
+    },
+    "is_fullscreen": {
+      "type": "boolean",
+      "description": "Whether the foreground window is in exclusive fullscreen mode"
+    },
+    "keystrokes_per_min": {
+      "type": "number",
+      "minimum": 0.0,
+      "description": "Aggregate typing speed in keystrokes per minute (NO characters stored)"
+    },
+    "typing_burst_rate": {
+      "type": "number",
+      "description": "Variance/cadence of keystroke intervals"
+    },
+    "mouse_velocity_avg": {
+      "type": "number",
+      "minimum": 0.0,
+      "description": "Average mouse movement speed in pixels per second"
+    },
+    "clicks_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total mouse button presses during the slice"
+    },
+    "scroll_delta": {
+      "type": "integer",
+      "description": "Aggregate mouse wheel scroll distance"
+    },
+    "is_audio_playing": {
+      "type": "boolean",
+      "description": "Whether any system audio session is actively outputting sound"
+    },
+    "is_audio_recording": {
+      "type": "boolean",
+      "description": "Whether any microphone or input audio capture session is active"
+    },
+    "system_idle_seconds": {
+      "type": "number",
+      "minimum": 0.0,
+      "description": "Seconds elapsed since the last global user input event"
+    },
+    "cognitive_state": {
+      "type": "string",
+      "enum": [
+        "DEEP_FOCUS_WRITING",
+        "ACTIVE_CODING",
+        "RESEARCH_READING",
+        "MEDIA_CONSUMPTION",
+        "HIGH_INTERACTION_GAMING",
+        "COMMUNICATION",
+        "IDLE_AWAY",
+        "UNCLASSIFIED"
+      ],
+      "description": "Layer 1: Classified cognitive activity type"
+    },
+    "domain_label": {
+      "type": "string",
+      "description": "Layer 2: Subject, course, or project name (e.g. Specialist Mathematics, Physics)"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence score of the classification (0.0 to 1.0)"
+    },
+    "label_source": {
+      "type": "string",
+      "enum": ["HEURISTIC_RULE", "USER_CONFIRMED", "ACTIVE_PROMPT", "RETROSPECTIVE_EDIT"],
+      "description": "Provenance of the assigned labels"
+    }
+  }
+}
