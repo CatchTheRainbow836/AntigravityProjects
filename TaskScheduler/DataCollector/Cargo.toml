@@ -1,0 +1,19 @@
+[package]
+name = "data-collector"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance, privacy-first behavior telemetry collector for AI Task Scheduler"
+authors = ["CatchTheRainbow836"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rusqlite = { version = "0.31", features = ["bundled"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
