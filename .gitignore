@@ -72,3 +72,11 @@ target/
 out/
 tmp/
 scratch/
+
+# DataCollector build artifacts
+TaskScheduler/DataCollector/.build_work/
+TaskScheduler/DataCollector/dist/
+TaskScheduler/DataCollector/DataCollector.spec
+TaskScheduler/DataCollector/__pycache__/
+TaskScheduler/DataCollector/src/__pycache__/
+*.db
