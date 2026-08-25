@@ -6,6 +6,7 @@ Handles SQLite connection, schema provisioning, batch insertion, querying, and e
 import sqlite3
 import os
 import json
+import threading
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
@@ -14,7 +15,8 @@ DB_SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "db_schema.sql")
 class DatabaseManager:
     def __init__(self, db_path: str = "datacollector.db"):
         self.db_path = db_path
-        self.conn = sqlite3.connect(self.db_path)
+        self._lock = threading.Lock()
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._init_schema()
 
@@ -61,9 +63,10 @@ class DatabaseManager:
             "label_source": record.get("label_source", "HEURISTIC_RULE"),
             "is_exported": 1 if record.get("is_exported", False) else 0,
         }
-        cursor = self.conn.execute(query, params)
-        self.conn.commit()
-        return cursor.lastrowid
+        with self._lock:
+            cursor = self.conn.execute(query, params)
+            self.conn.commit()
+            return cursor.lastrowid
 
     def insert_batch(self, records: List[Dict[str, Any]]) -> int:
         if not records:
@@ -73,25 +76,28 @@ class DatabaseManager:
         return len(records)
 
     def count_records(self) -> int:
-        cursor = self.conn.execute("SELECT COUNT(*) FROM telemetry_records")
-        return cursor.fetchone()[0]
+        with self._lock:
+            cursor = self.conn.execute("SELECT COUNT(*) FROM telemetry_records")
+            return cursor.fetchone()[0]
 
     def get_unexported_records(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         query = "SELECT * FROM telemetry_records WHERE is_exported = 0 ORDER BY id ASC"
         if limit:
             query += f" LIMIT {int(limit)}"
-        cursor = self.conn.execute(query)
-        return [dict(row) for row in cursor.fetchall()]
+        with self._lock:
+            cursor = self.conn.execute(query)
+            return [dict(row) for row in cursor.fetchall()]
 
     def mark_records_exported(self, record_ids: List[int]):
         if not record_ids:
             return
         placeholders = ",".join("?" for _ in record_ids)
-        self.conn.execute(
-            f"UPDATE telemetry_records SET is_exported = 1 WHERE id IN ({placeholders})",
-            record_ids
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute(
+                f"UPDATE telemetry_records SET is_exported = 1 WHERE id IN ({placeholders})",
+                record_ids
+            )
+            self.conn.commit()
 
     def record_export(self, manifest: Dict[str, Any]):
         query = """
@@ -103,8 +109,10 @@ class DatabaseManager:
             :end_timestamp, :format, :file_path, :content_hash
         )
         """
-        self.conn.execute(query, manifest)
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute(query, manifest)
+            self.conn.commit()
 
     def close(self):
-        self.conn.close()
+        with self._lock:
+            self.conn.close()
