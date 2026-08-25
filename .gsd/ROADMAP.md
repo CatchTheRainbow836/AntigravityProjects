@@ -1,7 +1,7 @@
 # ROADMAP.md — AI Task Scheduler: DataCollector
 
 > **Milestone**: v1.0 — DataCollector Standalone Executable & Telemetry Pipeline
-> **Current Phase**: Phase 4 (Desktop UI, Disclaimer & Retrospective Timeline)
+> **Current Phase**: Phase 5 (Incremental Export Engine & Standalone Packaging)
 
 ---
 
@@ -9,7 +9,7 @@
 - [x] Project Scaffolding & Foundational Data Contracts (Phase 1)
 - [x] Non-Admin Win32 Telemetry Engine (Keyboard/Mouse aggregates, Window title/geometry, Audio states, Idle) (Phase 2)
 - [x] Rule-Based Auto-Classification & Smart Prompting / Retrospective Timeline (Phase 3)
-- [ ] Desktop UI & Privacy Disclaimer First-Run Screen (Phase 4)
+- [x] Desktop UI & Privacy Disclaimer First-Run Screen (Phase 4)
 - [ ] Incremental Deduplicated Local Dataset Export & Standalone Packaging (Phase 5)
 
 ---
@@ -32,7 +32,7 @@
 **Requirements**: REQ-06, REQ-07
 
 ### Phase 4: Desktop UI, Disclaimer & Retrospective Timeline
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Objective**: Create a sleek, modern UI featuring first-run privacy consent, real-time activity dashboard, task tag presets (e.g., Specialist Math, Physics), and retrospective timeline editor.  
 **Requirements**: REQ-02, REQ-08, REQ-09
 
