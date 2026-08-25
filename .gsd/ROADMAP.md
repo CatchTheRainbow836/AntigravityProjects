@@ -1,7 +1,7 @@
 # ROADMAP.md — AI Task Scheduler: DataCollector
 
-> **Milestone**: v1.0 — DataCollector Standalone Executable & Telemetry Pipeline
-> **Current Phase**: Phase 5 (Incremental Export Engine & Standalone Packaging)
+> **Milestone**: v1.0 — DataCollector Standalone Executable & Telemetry Pipeline ✅ COMPLETE
+> **Current Phase**: All phases shipped — pending future TaskScheduler integration
 
 ---
 
@@ -10,7 +10,7 @@
 - [x] Non-Admin Win32 Telemetry Engine (Keyboard/Mouse aggregates, Window title/geometry, Audio states, Idle) (Phase 2)
 - [x] Rule-Based Auto-Classification & Smart Prompting / Retrospective Timeline (Phase 3)
 - [x] Desktop UI & Privacy Disclaimer First-Run Screen (Phase 4)
-- [ ] Incremental Deduplicated Local Dataset Export & Standalone Packaging (Phase 5)
+- [x] Incremental Deduplicated Local Dataset Export & Standalone Packaging (Phase 5)
 
 ---
 
@@ -37,6 +37,6 @@
 **Requirements**: REQ-02, REQ-08, REQ-09
 
 ### Phase 5: Incremental Export Engine & Standalone Packaging
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Objective**: Implement deduplicated local file export (JSONL, CSV, Parquet), standalone compilation pipeline into `TaskScheduler/DataCollector/dist/`, and end-to-end verification.  
 **Requirements**: REQ-01, REQ-11
