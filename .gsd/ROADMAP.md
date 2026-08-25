@@ -1,13 +1,13 @@
 # ROADMAP.md — AI Task Scheduler: DataCollector
 
 > **Milestone**: v1.0 — DataCollector Standalone Executable & Telemetry Pipeline
-> **Current Phase**: Phase 2 (Core Win32 Telemetry & Storage Engine)
+> **Current Phase**: Phase 3 (Rule-Based Classifier & Active Learning System)
 
 ---
 
 ## Must-Haves (from SPEC)
 - [x] Project Scaffolding & Foundational Data Contracts (Phase 1)
-- [ ] Non-Admin Win32 Telemetry Engine (Keyboard/Mouse aggregates, Window title/geometry, Audio states, Idle) (Phase 2)
+- [x] Non-Admin Win32 Telemetry Engine (Keyboard/Mouse aggregates, Window title/geometry, Audio states, Idle) (Phase 2)
 - [ ] Rule-Based Auto-Classification & Smart Prompting / Retrospective Timeline (Phase 3)
 - [ ] Desktop UI & Privacy Disclaimer First-Run Screen (Phase 4)
 - [ ] Incremental Deduplicated Local Dataset Export & Standalone Packaging (Phase 5)
@@ -22,7 +22,7 @@
 **Requirements**: REQ-01, REQ-12
 
 ### Phase 2: Core Win32 Telemetry & Storage Engine
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Objective**: Implement non-admin native Win32 collectors (mouse/keyboard rates, window geometry, audio state, idle) and high-performance local SQLite storage with schema versioning.  
 **Requirements**: REQ-03, REQ-04, REQ-05, REQ-10
 

@@ -1,22 +1,23 @@
 # STATE.md — Project Memory
 
-> **Current Status**: Phase 1 Complete (Verified)  
+> **Current Status**: Phase 2 Complete (Verified)  
 > **Active Milestone**: v1.0 (DataCollector)  
-> **Active Phase**: Phase 2 (Core Win32 Telemetry & Storage Engine)  
+> **Active Phase**: Phase 3 (Rule-Based Classifier & Active Learning System)  
 > **Last Updated**: 2026-08-25  
 
 ---
 
 ## Current Position
-- **Phase 1 (Foundation & Project Setup)**: ✅ Complete (Plans 1.1 and 1.2 executed & verified)
-- **Next Phase**: Phase 2 (Core Win32 Telemetry & Storage Engine)
-- **Next Step**: Plan Phase 2 (`/plan 2`)
+- **Phase 1 (Foundation & Project Setup)**: ✅ Complete
+- **Phase 2 (Core Win32 Telemetry & Storage Engine)**: ✅ Complete
+- **Next Phase**: Phase 3 (Rule-Based Classifier & Active Learning System)
+- **Next Step**: Plan and Execute Phase 3 (`/execute 3`)
 
 ---
 
 ## Last Session Summary
-Executed Phase 1:
-- Established `TaskScheduler/DataCollector/` architecture with `Cargo.toml`, `build.sh`, and `README.md`.
-- Defined `schema.json`, `types.ts`, and `db_schema.sql` data contracts.
-- Implemented `db_manager.py` and synthetic telemetry `simulator.py`.
-- Created automated test suite (`test_schema.py`, `test_storage.py`) with 7/7 tests passing.
+Executed Phase 2:
+- Built native non-admin sensor collectors (`kinetic_collector.py`, `window_collector.py`, `system_collector.py`).
+- Implemented `TelemetryEngine` (`engine.py`) managing 5-second aggregation slices and thread-safe SQLite persistence.
+- Verified title sanitization, screen geometry ratios, and activity rates.
+- 12/12 automated unit and integration tests passing.
