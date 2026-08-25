@@ -1,6 +1,6 @@
 # STATE.md — Project Memory
 
-> **Current Status**: Project Initialized  
+> **Current Status**: Phase 1 Planned  
 > **Active Milestone**: v1.0 (DataCollector)  
 > **Active Phase**: Phase 1 (Foundation & Project Setup)  
 > **Last Updated**: 2026-08-25  
@@ -11,11 +11,11 @@
 - **SPEC**: Finalized (`.gsd/SPEC.md`)
 - **Requirements**: Defined (`.gsd/REQUIREMENTS.md`)
 - **Roadmap**: 5 Phases mapped (`.gsd/ROADMAP.md`)
-- **Next Step**: Begin Phase 1 planning & implementation (`/plan 1` or `/execute 1`)
+- **Phase 1 Plans**: Created (2 plans across 2 waves in `.gsd/phases/1/`)
+- **Next Step**: Execute Phase 1 (`/execute 1`)
 
 ---
 
-## Key Context & Constraints
-- **Target OS**: Windows 10/11 x64, Non-admin execution.
-- **Directory Layout**: `TaskScheduler/DataCollector/`
-- **Output Artifact**: Standalone portable `.exe` with local-only storage and exports.
+## Phase 1 Plan Index
+- `1.1`: Project Directory Structure & Toolchain Architecture Setup (Wave 1)
+- `1.2`: Foundation Data Contracts, Mock Simulation Harness & Validation Tests (Wave 2)
