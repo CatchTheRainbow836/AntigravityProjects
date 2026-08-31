@@ -40,3 +40,17 @@
 **Status**: ✅ Complete  
 **Objective**: Implement deduplicated local file export (JSONL, CSV, Parquet), standalone compilation pipeline into `TaskScheduler/DataCollector/dist/`, and end-to-end verification.  
 **Requirements**: REQ-01, REQ-11
+
+---
+
+### Phase 6: Recompile and Improve UI
+**Status**: ⬜ Not Started  
+**Objective**: Transform DataCollector into a polished Windows GUI application with dynamic timeline visualization, multi-state activity classification (with 0/1 finalization at >=75% confidence and multi-monitor/audio context), background thread execution with system tray & autostart, crash-safe autosave, and a robust Windows cross-compilation / release pipeline.  
+**Depends on**: Phase 5
+
+**Tasks**:
+- [ ] TBD (run /plan 6 to create)
+
+**Verification**:
+- TBD
+
