@@ -5,7 +5,7 @@ Presents transparent terms regarding telemetry metrics and prevents data recordi
 
 import json
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.datacollector_consent.json")
 
@@ -40,8 +40,8 @@ By clicking 'I Agree', you consent to local telemetry recording.
 """
 
 class DisclaimerManager:
-    def __init__(self, config_path: str = DEFAULT_CONFIG_PATH):
-        self.config_path = config_path
+    def __init__(self, config_path: str = DEFAULT_CONFIG_PATH, storage_path: Optional[str] = None):
+        self.config_path = storage_path if storage_path is not None else config_path
 
     def get_disclaimer_text(self) -> str:
         return DISCLAIMER_TEXT.strip()
