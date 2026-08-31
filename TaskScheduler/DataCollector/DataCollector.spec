@@ -1,12 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+import sys
+
+spec_dir = os.path.dirname(os.path.abspath(SPEC))
+src_dir = os.path.join(spec_dir, "src")
 
 a = Analysis(
-    ['/workspace/TaskScheduler/DataCollector/src/main.py'],
-    pathex=['/workspace/TaskScheduler/DataCollector/src'],
+    [os.path.join(src_dir, 'main.py')],
+    pathex=[src_dir],
     binaries=[],
-    datas=[('/workspace/TaskScheduler/DataCollector/src/schema.json', '.'), ('/workspace/TaskScheduler/DataCollector/src/db_schema.sql', '.')],
-    hiddenimports=[],
+    datas=[
+        (os.path.join(src_dir, 'schema.json'), '.'),
+        (os.path.join(src_dir, 'db_schema.sql'), '.')
+    ],
+    hiddenimports=['customtkinter', 'pystray', 'PIL', 'PIL.Image', 'PIL.ImageDraw', 'darkdetect'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -29,7 +37,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

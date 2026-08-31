@@ -1,0 +1,74 @@
+name: Build and Release Windows Executable
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller customtkinter pystray pillow darkdetect
+
+      - name: Verify tests
+        run: |
+          python -m unittest discover -s TaskScheduler/DataCollector/tests -p "test_*.py" -v
+
+      - name: Build DataCollector.exe with PyInstaller
+        working-directory: TaskScheduler/DataCollector
+        run: |
+          pyinstaller `
+            --noconfirm `
+            --onedir `
+            --windowed `
+            --name DataCollector `
+            --distpath dist `
+            --workpath .build_work `
+            --paths src `
+            --add-data "src/schema.json;." `
+            --add-data "src/db_schema.sql;." `
+            src/main.py
+
+          # Also produce onefile standalone .exe
+          pyinstaller `
+            --noconfirm `
+            --onefile `
+            --windowed `
+            --name DataCollector `
+            --distpath dist `
+            --workpath .build_work `
+            --paths src `
+            --add-data "src/schema.json;." `
+            --add-data "src/db_schema.sql;." `
+            src/main.py
+
+      - name: Upload Windows Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataCollector-Windows-x64
+          path: TaskScheduler/DataCollector/dist/DataCollector.exe
+
+      - name: Create GitHub Release (on tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: TaskScheduler/DataCollector/dist/DataCollector.exe
+          draft: false
+          prerelease: false
+          generate_release_notes: true

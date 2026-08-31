@@ -1,6 +1,7 @@
 """
 Main Application Entry Point for DataCollector.
-Coordinates the disclaimer consent, telemetry engine, heuristic classification, and dataset exporter.
+Coordinates the desktop GUI app, background tray daemon, telemetry engine,
+heuristic classification, active learning, and dataset exporter.
 """
 
 import sys
@@ -20,16 +21,25 @@ from ui.disclaimer import DisclaimerManager
 from ui.dashboard import DashboardPresenter
 from simulator import generate_sample_session
 
-def run_live(db_path: str = "datacollector.db"):
+def run_gui(db_path: str = "datacollector.db"):
+    try:
+        from ui.app import create_app
+        app = create_app(db_path=db_path)
+        app.mainloop()
+    except Exception as e:
+        print(f"[GUI Notice] Unable to initialize window interface: {e}")
+        print("Falling back to CLI mode...")
+        run_live_cli(db_path)
+
+def run_live_cli(db_path: str = "datacollector.db"):
     print("═" * 60)
-    print("      AI TASK SCHEDULER — BEHAVIOR DATA COLLECTOR")
+    print("      AI TASK SCHEDULER — BEHAVIOR DATA COLLECTOR (CLI)")
     print("═" * 60)
 
     disclaimer = DisclaimerManager()
     if not disclaimer.has_consented():
         print(disclaimer.get_disclaimer_text())
         print("\nDo you agree to the privacy policy and consent to local data recording? (y/n): ")
-        # Non-blocking default for scripted/interactive runs
         try:
             choice = input().strip().lower()
         except EOFError:
@@ -84,15 +94,17 @@ def run_export(fmt: str = "jsonl", db_path: str = "datacollector.db"):
 
 def main():
     parser = argparse.ArgumentParser(description="AI Task Scheduler: DataCollector Standalone Executable")
-    parser.add_argument("command", nargs="?", default="run", choices=["run", "simulate", "export", "status"])
+    parser.add_argument("command", nargs="?", default="gui", choices=["gui", "cli", "run", "simulate", "export", "status"])
+    parser.add_argument("--cli", action="store_true", help="Force running in command-line interface mode")
+    parser.add_argument("--background", action="store_true", help="Launch minimized to background tray")
     parser.add_argument("--format", default="jsonl", choices=["jsonl", "csv"], help="Export format")
     parser.add_argument("--count", type=int, default=50, help="Number of simulated records")
     parser.add_argument("--db", default="datacollector.db", help="Database file path")
 
     args = parser.parse_args()
 
-    if args.command == "run":
-        run_live(args.db)
+    if args.cli or args.command in ("cli", "run"):
+        run_live_cli(args.db)
     elif args.command == "simulate":
         run_simulate(args.count, args.db)
     elif args.command == "export":
@@ -102,6 +114,8 @@ def main():
         print(f"Database: {args.db}")
         print(f"Total Telemetry Records: {db.count_records()}")
         print(f"Unexported Records: {len(db.get_unexported_records())}")
+    else:
+        run_gui(args.db)
 
 if __name__ == "__main__":
     main()
