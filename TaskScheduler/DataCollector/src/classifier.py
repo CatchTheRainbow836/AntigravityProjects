@@ -1,9 +1,9 @@
 """
 Heuristic Classifier for DataCollector.
-Provides deterministic multi-layer baseline classification:
-- Layer 1: Cognitive State (Writing, Coding, Reading, Media, Gaming, Idle)
-- Layer 2: Domain / Subject Label (Mathematics, Physics, Chemistry, Software, etc.)
-- Confidence Score: Multi-signal convergence rating (0.0 to 1.0)
+Provides deterministic multi-state classification:
+- Multi-State & Concurrent Activity Detection (Coding, Writing, Research, Mathematics, Physics, Music/Media, Communication/Call, Gaming, Idle)
+- Continuous Confidence Scoring for each active state (0.0 to 1.0)
+- Finalized Binary Value: strictly 1 if confidence >= 0.75, else 0
 """
 
 import re
@@ -56,6 +56,16 @@ BROWSER_APPS = {
     "chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe"
 }
 
+MEDIA_APPS = {
+    "spotify.exe", "vlc.exe", "wmplayer.exe", "music.ui.exe", "itunes.exe", "netflix.exe"
+}
+
+COMMUNICATION_APPS = {
+    "discord.exe", "teams.exe", "zoom.exe", "slack.exe", "skype.exe", "telegram.exe", "whatsapp.exe"
+}
+
+CONFIDENCE_THRESHOLD = 0.75
+
 class HeuristicClassifier:
     def __init__(self, custom_domain_keywords: Dict[str, List[str]] = None):
         self.domain_keywords = custom_domain_keywords if custom_domain_keywords is not None else DEFAULT_DOMAIN_KEYWORDS
@@ -80,69 +90,118 @@ class HeuristicClassifier:
             return (best_domain, 0.80)
         return ("Unlabeled", 0.20)
 
-    def classify_cognitive_state(self, record: Dict[str, Any]) -> Tuple[str, float]:
+    def evaluate_multi_states(self, record: Dict[str, Any]) -> Dict[str, float]:
+        """
+        Calculates individual confidence scores [0.0 - 1.0] for all possible concurrent activities.
+        """
+        states: Dict[str, float] = {}
+
         idle_secs = record.get("system_idle_seconds", 0.0)
-        app_name = record.get("app_name", "").lower()
-        kpm = record.get("keystrokes_per_min", 0.0)
-        mouse_vel = record.get("mouse_velocity_avg", 0.0)
+        app_name = (record.get("app_name") or record.get("foreground_window", {}).get("process", "")).lower()
+        title = (record.get("window_title_sanitized") or record.get("foreground_window", {}).get("title", "")).lower()
+        kpm = record.get("keystrokes_per_min", record.get("keystroke_rate", 0.0) * 60 if "keystroke_rate" in record else 0.0)
+        mouse_vel = record.get("mouse_velocity_avg", record.get("mouse_velocity", 0.0))
         clicks = record.get("clicks_count", 0)
         scroll = record.get("scroll_delta", 0)
-        is_audio = record.get("is_audio_playing", False)
-        is_fullscreen = record.get("is_fullscreen", False)
+        is_audio = bool(record.get("is_audio_playing", record.get("audio_active", False)))
+        is_fullscreen = bool(record.get("is_fullscreen", False))
 
-        # 1. Idle Detection
+        visible_windows = record.get("visible_windows", [])
+        visible_apps = {w.get("process", "").lower() for w in visible_windows}
+        visible_titles = " ".join([w.get("title", "").lower() for w in visible_windows])
+
+        # 1. Idle
         if idle_secs >= 60.0:
-            return ("IDLE_AWAY", 1.0)
+            states["Idle"] = 1.0
+            return states
 
-        # 2. Gaming / High Interaction Detection
-        if is_fullscreen and (mouse_vel > 250.0 or clicks > 12) and app_name not in IDE_APPS and app_name not in BROWSER_APPS:
-            return ("HIGH_INTERACTION_GAMING", 0.90)
+        # 2. Coding / Software Development
+        if app_name in IDE_APPS or "vs code" in title or "visual studio" in title:
+            if kpm > 20.0 or clicks > 2 or mouse_vel > 30:
+                states["Coding"] = 0.95
+            else:
+                states["Coding"] = 0.80
+        elif any(ide in visible_apps for ide in IDE_APPS):
+            states["Coding"] = 0.65
 
-        # 3. Media / Video Watching Detection
-        if is_audio and kpm < 15.0 and mouse_vel < 40.0:
-            return ("MEDIA_CONSUMPTION", 0.88)
+        # 3. Writing / Document Editing
+        if app_name in WRITING_APPS or "word" in title or "docs" in title or "notion" in title:
+            if kpm > 30.0:
+                states["Writing"] = 0.92
+            elif kpm > 5.0 or clicks > 2:
+                states["Writing"] = 0.80
+            else:
+                states["Writing"] = 0.65
 
-        # 4. Active Coding Detection
-        if app_name in IDE_APPS:
-            if kpm > 20.0 or clicks > 2:
-                return ("ACTIVE_CODING", 0.95)
-            return ("ACTIVE_CODING", 0.75)
-
-        # 5. Deep Focus Writing Detection
-        if app_name in WRITING_APPS:
-            if kpm > 40.0:
-                return ("DEEP_FOCUS_WRITING", 0.92)
-            elif kpm > 10.0 or clicks > 3:
-                return ("DEEP_FOCUS_WRITING", 0.80)
-            return ("DEEP_FOCUS_WRITING", 0.65)
-
-        # 6. Research / Reading Detection
+        # 4. Research / Web Browsing
         if app_name in BROWSER_APPS:
-            if scroll > 30 and kpm < 30.0:
-                return ("RESEARCH_READING", 0.85)
-            elif kpm > 50.0:
-                return ("DEEP_FOCUS_WRITING", 0.75)
-            elif clicks > 3:
-                return ("RESEARCH_READING", 0.70)
-            return ("RESEARCH_READING", 0.60)
+            if scroll > 20 or clicks > 2:
+                states["Research"] = 0.85
+            else:
+                states["Research"] = 0.70
 
-        # Fallback
-        return ("UNCLASSIFIED", 0.30)
+        # 5. Music / Media Playback
+        if is_audio or app_name in MEDIA_APPS or any(m in visible_apps for m in MEDIA_APPS) or "spotify" in visible_titles or "youtube" in title or "music" in title:
+            if is_audio:
+                states["Music"] = 0.90
+            else:
+                states["Music"] = 0.75
+
+        # 6. Communication / Voice Calls
+        if app_name in COMMUNICATION_APPS or any(c in visible_apps for c in COMMUNICATION_APPS) or "call" in title or "meeting" in title or "zoom" in visible_titles or "discord" in visible_titles:
+            if record.get("is_audio_recording", False) or is_audio:
+                states["Communication"] = 0.92
+            else:
+                states["Communication"] = 0.78
+
+        # 7. Gaming
+        if is_fullscreen and (mouse_vel > 250.0 or clicks > 12) and app_name not in IDE_APPS and app_name not in BROWSER_APPS:
+            states["Gaming"] = 0.90
+
+        # 8. Domain Specific Subjects (Physics, Specialist Math, etc.)
+        dom, dom_conf = self.extract_domain(title + " " + visible_titles)
+        if dom != "Unlabeled":
+            states[dom] = dom_conf
+
+        if not states:
+            states["General Task"] = 0.50
+
+        return states
 
     def classify(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        cognitive_state, cog_conf = self.classify_cognitive_state(record)
-        domain_label, dom_conf = self.extract_domain(record.get("window_title_sanitized", ""))
+        multi_states = self.evaluate_multi_states(record)
 
-        # Overall confidence is weighted average
-        if cognitive_state == "IDLE_AWAY":
-            overall_conf = 1.0
+        # Primary state is the highest confidence state
+        sorted_states = sorted(multi_states.items(), key=lambda item: item[1], reverse=True)
+        primary_state, primary_conf = sorted_states[0] if sorted_states else ("UNCLASSIFIED", 0.0)
+
+        # Domain extraction
+        title = (record.get("window_title_sanitized") or record.get("foreground_window", {}).get("title", ""))
+        visible_titles = " ".join([w.get("title", "") for w in record.get("visible_windows", [])])
+        domain_label, dom_conf = self.extract_domain(title + " " + visible_titles)
+
+        if primary_state == "Idle":
             domain_label = "Idle"
+            overall_conf = 1.0
         else:
-            overall_conf = round((cog_conf * 0.6) + (dom_conf * 0.4), 2)
+            overall_conf = round(primary_conf, 2)
+
+        # Finalized binary value (1 if confidence >= 0.75, else 0)
+        finalized_value = 1 if overall_conf >= CONFIDENCE_THRESHOLD else 0
+
+        # Binary active states dictionary (each state marked 1 if state conf >= 0.75 else 0)
+        active_states_binary = {
+            state: (1 if conf >= CONFIDENCE_THRESHOLD else 0)
+            for state, conf in multi_states.items()
+        }
 
         return {
-            "cognitive_state": cognitive_state,
+            "cognitive_state": primary_state,
             "domain_label": domain_label,
             "confidence": overall_conf,
+            "confidence_score": overall_conf,
+            "finalized_value": finalized_value,
+            "active_states": active_states_binary,
+            "state_confidences": multi_states,
             "label_source": "HEURISTIC_RULE"
         }

@@ -115,6 +115,9 @@ def generate_sample_session(num_samples: int = 20, start_time: datetime = None) 
             "cognitive_state": current_scenario["cognitive_state"],
             "domain_label": current_scenario["domain_label"],
             "confidence": current_scenario["confidence"],
+            "confidence_score": current_scenario["confidence"],
+            "finalized_value": 1 if current_scenario["confidence"] >= 0.75 else 0,
+            "active_states": {current_scenario["cognitive_state"]: 1},
             "label_source": "HEURISTIC_RULE" if random.random() > 0.3 else "USER_CONFIRMED",
             "is_exported": False
         }

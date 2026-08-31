@@ -1,6 +1,6 @@
 """
 Database Manager for DataCollector.
-Handles SQLite connection, schema provisioning, batch insertion, querying, and export tracking.
+Handles SQLite connection with WAL mode, schema v2 provisioning, migrations, batch insertion, querying, and export tracking.
 """
 
 import sqlite3
@@ -21,25 +21,56 @@ class DatabaseManager:
         self._init_schema()
 
     def _init_schema(self):
-        if os.path.exists(DB_SCHEMA_PATH):
-            with open(DB_SCHEMA_PATH, "r", encoding="utf-8") as f:
-                self.conn.executescript(f.read())
-        self.conn.commit()
+        with self._lock:
+            # Enable WAL mode and normal synchronous for fast crash-safe autosave
+            self.conn.execute("PRAGMA journal_mode = WAL;")
+            self.conn.execute("PRAGMA synchronous = NORMAL;")
+            self.conn.execute("PRAGMA foreign_keys = ON;")
+
+            if os.path.exists(DB_SCHEMA_PATH):
+                with open(DB_SCHEMA_PATH, "r", encoding="utf-8") as f:
+                    self.conn.executescript(f.read())
+
+            # Perform column migrations if opening an existing v1 database
+            self._migrate_v2()
+            self.conn.commit()
+
+    def _migrate_v2(self):
+        cursor = self.conn.execute("PRAGMA table_info(telemetry_records)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if columns:
+            if "confidence_score" not in columns:
+                self.conn.execute("ALTER TABLE telemetry_records ADD COLUMN confidence_score REAL NOT NULL DEFAULT 0.0")
+            if "finalized_value" not in columns:
+                self.conn.execute("ALTER TABLE telemetry_records ADD COLUMN finalized_value INTEGER NOT NULL DEFAULT 0")
+            if "active_states_json" not in columns:
+                self.conn.execute("ALTER TABLE telemetry_records ADD COLUMN active_states_json TEXT DEFAULT '{}'")
 
     def insert_record(self, record: Dict[str, Any]) -> int:
+        conf = float(record.get("confidence", record.get("confidence_score", 0.0)))
+        # Finalized value: strictly 1 if confidence >= 0.75, else 0 (or explicitly passed)
+        finalized_val = int(record.get("finalized_value", 1 if conf >= 0.75 else 0))
+        active_states = record.get("active_states", record.get("active_states_json", {}))
+        if isinstance(active_states, dict) or isinstance(active_states, list):
+            active_states_str = json.dumps(active_states)
+        else:
+            active_states_str = str(active_states)
+
         query = """
         INSERT INTO telemetry_records (
             timestamp, duration_seconds, app_name, window_title_sanitized,
             screen_area_pct, is_fullscreen, keystrokes_per_min, typing_burst_rate,
             mouse_velocity_avg, clicks_count, scroll_delta, is_audio_playing,
             is_audio_recording, system_idle_seconds, cognitive_state, domain_label,
-            confidence, label_source, is_exported
+            confidence, confidence_score, finalized_value, active_states_json,
+            label_source, is_exported
         ) VALUES (
             :timestamp, :duration_seconds, :app_name, :window_title_sanitized,
             :screen_area_pct, :is_fullscreen, :keystrokes_per_min, :typing_burst_rate,
             :mouse_velocity_avg, :clicks_count, :scroll_delta, :is_audio_playing,
             :is_audio_recording, :system_idle_seconds, :cognitive_state, :domain_label,
-            :confidence, :label_source, :is_exported
+            :confidence, :confidence_score, :finalized_value, :active_states_json,
+            :label_source, :is_exported
         )
         """
         params = {
@@ -59,7 +90,10 @@ class DatabaseManager:
             "system_idle_seconds": record.get("system_idle_seconds", 0.0),
             "cognitive_state": record.get("cognitive_state", "UNCLASSIFIED"),
             "domain_label": record.get("domain_label", "Unlabeled"),
-            "confidence": record.get("confidence", 0.0),
+            "confidence": conf,
+            "confidence_score": conf,
+            "finalized_value": finalized_val,
+            "active_states_json": active_states_str,
             "label_source": record.get("label_source", "HEURISTIC_RULE"),
             "is_exported": 1 if record.get("is_exported", False) else 0,
         }
@@ -80,6 +114,12 @@ class DatabaseManager:
             cursor = self.conn.execute("SELECT COUNT(*) FROM telemetry_records")
             return cursor.fetchone()[0]
 
+    def get_recent_records(self, limit: int = 50) -> List[Dict[str, Any]]:
+        query = "SELECT * FROM telemetry_records ORDER BY id DESC LIMIT ?"
+        with self._lock:
+            cursor = self.conn.execute(query, (limit,))
+            return [dict(row) for row in cursor.fetchall()]
+
     def get_unexported_records(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         query = "SELECT * FROM telemetry_records WHERE is_exported = 0 ORDER BY id ASC"
         if limit:
@@ -97,6 +137,20 @@ class DatabaseManager:
                 f"UPDATE telemetry_records SET is_exported = 1 WHERE id IN ({placeholders})",
                 record_ids
             )
+            self.conn.commit()
+
+    def update_record_label(self, record_id: int, domain_label: str, cognitive_state: Optional[str] = None):
+        with self._lock:
+            if cognitive_state:
+                self.conn.execute(
+                    "UPDATE telemetry_records SET domain_label = ?, cognitive_state = ?, label_source = 'USER_VERIFIED', confidence = 1.0, confidence_score = 1.0, finalized_value = 1 WHERE id = ?",
+                    (domain_label, cognitive_state, record_id)
+                )
+            else:
+                self.conn.execute(
+                    "UPDATE telemetry_records SET domain_label = ?, label_source = 'USER_VERIFIED', confidence = 1.0, confidence_score = 1.0, finalized_value = 1 WHERE id = ?",
+                    (domain_label, record_id)
+                )
             self.conn.commit()
 
     def record_export(self, manifest: Dict[str, Any]):

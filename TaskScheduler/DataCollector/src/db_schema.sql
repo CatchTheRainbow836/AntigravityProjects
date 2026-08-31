@@ -1,7 +1,13 @@
--- DataCollector SQLite Storage Schema with WAL Mode
+-- DataCollector SQLite Storage Schema v2 with WAL Mode
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;
 PRAGMA foreign_keys = ON;
+
+-- Schema Version Tracking
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER PRIMARY KEY,
+    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 -- 1. Telemetry Slices Table (High-frequency granular feature vectors)
 CREATE TABLE IF NOT EXISTS telemetry_records (
@@ -23,6 +29,9 @@ CREATE TABLE IF NOT EXISTS telemetry_records (
     cognitive_state TEXT NOT NULL DEFAULT 'UNCLASSIFIED',
     domain_label TEXT NOT NULL DEFAULT 'Unlabeled',
     confidence REAL NOT NULL DEFAULT 0.0,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
+    finalized_value INTEGER NOT NULL DEFAULT 0, -- 0 or 1 (1 if confidence >= 0.75)
+    active_states_json TEXT DEFAULT '{}',      -- JSON multi-state mapping e.g. {"Coding": 1, "Music": 1}
     label_source TEXT NOT NULL DEFAULT 'HEURISTIC_RULE',
     is_exported INTEGER NOT NULL DEFAULT 0
 );
@@ -33,6 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_telemetry_exported ON telemetry_records (is_expor
 CREATE INDEX IF NOT EXISTS idx_telemetry_app ON telemetry_records (app_name);
 CREATE INDEX IF NOT EXISTS idx_telemetry_cognitive ON telemetry_records (cognitive_state);
 CREATE INDEX IF NOT EXISTS idx_telemetry_domain ON telemetry_records (domain_label);
+CREATE INDEX IF NOT EXISTS idx_telemetry_finalized ON telemetry_records (finalized_value);
 
 -- 2. Aggregated Continuous Behavior Segments Table
 CREATE TABLE IF NOT EXISTS behavior_segments (
@@ -44,6 +54,8 @@ CREATE TABLE IF NOT EXISTS behavior_segments (
     cognitive_state TEXT NOT NULL,
     domain_label TEXT NOT NULL,
     confidence REAL NOT NULL,
+    finalized_value INTEGER NOT NULL DEFAULT 0,
+    active_states_json TEXT DEFAULT '{}',
     source TEXT NOT NULL,
     sample_count INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP

@@ -102,6 +102,7 @@ class TelemetryEngine:
             "window_title_sanitized": window_data["window_title_sanitized"],
             "screen_area_pct": window_data["screen_area_pct"],
             "is_fullscreen": window_data["is_fullscreen"],
+            "visible_windows": window_data.get("visible_windows", []),
             "keystrokes_per_min": kinetic_data["keystrokes_per_min"],
             "typing_burst_rate": kinetic_data["typing_burst_rate"],
             "mouse_velocity_avg": kinetic_data["mouse_velocity_avg"],
@@ -113,6 +114,9 @@ class TelemetryEngine:
             "cognitive_state": "UNCLASSIFIED",
             "domain_label": "Unlabeled",
             "confidence": 0.0,
+            "confidence_score": 0.0,
+            "finalized_value": 0,
+            "active_states": {},
             "label_source": "HEURISTIC_RULE",
             "is_exported": False
         }

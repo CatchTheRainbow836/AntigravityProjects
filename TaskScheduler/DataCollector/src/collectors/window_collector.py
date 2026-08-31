@@ -1,12 +1,13 @@
 """
 Window and Screen Geometry Collector for DataCollector.
-Extracts foreground process name, sanitized window titles, bounding boxes, and screen ratio coverage without requiring administrative privileges.
+Extracts foreground process name, sanitized window titles, bounding boxes, screen ratio coverage,
+and visible windows across multi-monitor setups without requiring administrative privileges.
 """
 
 import sys
 import os
 import re
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 IS_WINDOWS = sys.platform == "win32"
 
@@ -38,33 +39,9 @@ class WindowCollector:
         title = re.sub(r'\s+', ' ', title)
         return title[:200]
 
-    def get_active_window_info(self) -> Dict[str, Any]:
+    def get_process_name_for_hwnd(self, hwnd) -> str:
         if not IS_WINDOWS:
-            return {
-                "app_name": "DevelopmentEnvironment.exe",
-                "window_title_sanitized": "Active Development Window",
-                "screen_area_pct": 100.0,
-                "is_fullscreen": False,
-                "window_rect": {"left": 0, "top": 0, "right": 1920, "bottom": 1080}
-            }
-
-        hwnd = user32.GetForegroundWindow()
-        if not hwnd:
-            return {
-                "app_name": "System.exe",
-                "window_title_sanitized": "Desktop",
-                "screen_area_pct": 100.0,
-                "is_fullscreen": False,
-                "window_rect": {"left": 0, "top": 0, "right": self._cached_screen_width, "bottom": self._cached_screen_height}
-            }
-
-        # Get window title
-        length = user32.GetWindowTextLengthW(hwnd)
-        title_buffer = ctypes.create_unicode_buffer(length + 1)
-        user32.GetWindowTextW(hwnd, title_buffer, length + 1)
-        raw_title = title_buffer.value
-
-        # Get Process Name
+            return "App.exe"
         pid = wintypes.DWORD()
         user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
         app_name = "Unknown.exe"
@@ -77,6 +54,81 @@ class WindowCollector:
             if kernel32.QueryFullProcessImageNameW(h_process, 0, exe_buffer, ctypes.byref(size)):
                 app_name = os.path.basename(exe_buffer.value)
             kernel32.CloseHandle(h_process)
+        return app_name
+
+    def get_visible_windows(self) -> List[Dict[str, Any]]:
+        """Enumerate visible top-level windows on screen across all displays."""
+        if not IS_WINDOWS:
+            return [
+                {"title": "Visual Studio Code - main.py", "process": "Code.exe", "is_foreground": True},
+                {"title": "Spotify Free", "process": "Spotify.exe", "is_foreground": False}
+            ]
+
+        windows = []
+        foreground_hwnd = user32.GetForegroundWindow()
+
+        WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+        def enum_windows_callback(hwnd, lparam):
+            if not user32.IsWindowVisible(hwnd):
+                return True
+            length = user32.GetWindowTextLengthW(hwnd)
+            if length == 0:
+                return True
+            title_buffer = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(hwnd, title_buffer, length + 1)
+            raw_title = title_buffer.value
+
+            rect = wintypes.RECT()
+            user32.GetWindowRect(hwnd, ctypes.byref(rect))
+            width = max(0, rect.right - rect.left)
+            height = max(0, rect.bottom - rect.top)
+            # Filter tiny off-screen utility windows
+            if width > 100 and height > 100:
+                app_name = self.get_process_name_for_hwnd(hwnd)
+                windows.append({
+                    "title": self.sanitize_title(raw_title),
+                    "process": app_name,
+                    "is_foreground": (hwnd == foreground_hwnd),
+                    "width": width,
+                    "height": height
+                })
+            return True
+
+        callback = WNDENUMPROC(enum_windows_callback)
+        user32.EnumWindows(callback, 0)
+        return windows[:15] # Limit to top 15 visible windows
+
+    def get_active_window_info(self) -> Dict[str, Any]:
+        if not IS_WINDOWS:
+            return {
+                "app_name": "DevelopmentEnvironment.exe",
+                "window_title_sanitized": "Active Development Window",
+                "screen_area_pct": 100.0,
+                "is_fullscreen": False,
+                "window_rect": {"left": 0, "top": 0, "right": 1920, "bottom": 1080},
+                "visible_windows": self.get_visible_windows()
+            }
+
+        hwnd = user32.GetForegroundWindow()
+        if not hwnd:
+            return {
+                "app_name": "System.exe",
+                "window_title_sanitized": "Desktop",
+                "screen_area_pct": 100.0,
+                "is_fullscreen": False,
+                "window_rect": {"left": 0, "top": 0, "right": self._cached_screen_width, "bottom": self._cached_screen_height},
+                "visible_windows": self.get_visible_windows()
+            }
+
+        # Get window title
+        length = user32.GetWindowTextLengthW(hwnd)
+        title_buffer = ctypes.create_unicode_buffer(length + 1)
+        user32.GetWindowTextW(hwnd, title_buffer, length + 1)
+        raw_title = title_buffer.value
+
+        # Get Process Name
+        app_name = self.get_process_name_for_hwnd(hwnd)
 
         # Get Window Geometry
         rect = wintypes.RECT()
@@ -95,5 +147,6 @@ class WindowCollector:
             "window_title_sanitized": self.sanitize_title(raw_title),
             "screen_area_pct": area_pct,
             "is_fullscreen": is_fullscreen,
-            "window_rect": {"left": rect.left, "top": rect.top, "right": rect.right, "bottom": rect.bottom}
+            "window_rect": {"left": rect.left, "top": rect.top, "right": rect.right, "bottom": rect.bottom},
+            "visible_windows": self.get_visible_windows()
         }
