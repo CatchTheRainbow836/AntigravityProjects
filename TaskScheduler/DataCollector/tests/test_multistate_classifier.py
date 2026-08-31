@@ -40,7 +40,7 @@ class TestMultiStateClassifier(unittest.TestCase):
             ]
         }
         res = self.classifier.classify(sample)
-        self.assertEqual(res["cognitive_state"], "Coding")
+        self.assertEqual(res["cognitive_state"], "ACTIVE_CODING")
         self.assertGreaterEqual(res["confidence"], CONFIDENCE_THRESHOLD)
         self.assertEqual(res["finalized_value"], 1)
         self.assertEqual(res["active_states"]["Coding"], 1)
